@@ -153,6 +153,11 @@
 	// Canvas resolution defaults to a square `size`, but rectangular controllers (e.g. the Neo's infobar) can override this.
 	export let width: number = size;
 	export let height: number = size;
+	// Grid columns a key's display covers: the key is laid out over that many cells, as tall as any other key (it reaches into the gaps it covers), unless it would not fit them.
+	export let span: number = 1;
+	$: cellScale = span > 1 ? Math.min(112 / height, (span * 132 - 2) / width) : 112 /* desired inner size */ / size;
+	$: marginX = -((span > 1 ? width : size) + 3 * 2 /* border */ - span * 132) /* desired outer size */ / 2;
+	$: marginY = -((span > 1 ? height : size) + 3 * 2 - 132) / 2;
 	$: (async () => {
 		const sl = structuredClone(slot);
 		if (!sl) {
@@ -191,11 +196,11 @@
 	$: accessibleLabel = label + (slot ? ": " + slot.action.name + (state?.show && state?.text ? " - " + state.text : "") : "");
 </script>
 
-<div class="relative" style={`transform: scale(${(112 /* desired inner size */ / size) * scale});`}>
+<div class="relative" style={`transform: scale(${cellScale * scale});`}>
 	<canvas
 		bind:this={canvas}
 		class="relative border-3 border-neutral-700 rounded-3xl outline-none outline-offset-2 outline-blue-500"
-		style={`margin: ${-((size + 3 * 2 /* border */ - 132) /* desired outer size */ / 2)}px;`}
+		style={`margin: ${marginY}px ${marginX}px;`}
 		class:outline-solid={active && ((slot && $inspectedInstance == slot.context) || (context && $inspectedInstance == context))}
 		class:rounded-full!={context?.controller == "Encoder"}
 		class:rounded-lg!={context?.controller == "Infobar"}

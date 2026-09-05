@@ -82,8 +82,21 @@
 	let focusedRow = 0;
 	let focusedCol = 0;
 
+	// Plugin devices may declare the resolution of their key displays, and keys whose display covers several columns.
+	function keySize(position: number): { width: number; height: number; span: number } {
+		const fallback = device.id.startsWith("sd-") && device.rows == 4 && device.columns == 8 ? 192 : 144;
+		const size = device.key_sizes?.[position] ?? device.key_size;
+		return { width: size?.width ?? fallback, height: size?.height ?? fallback, span: Math.max(1, size?.span ?? 1) };
+	}
+	// Keypad positions shown in each row: a key spanning several columns covers the positions after it.
+	$: keypadRows = Array.from({ length: device.rows }, (_, r) => {
+		const positions: number[] = [];
+		for (let c = 0; c < device.columns; c += keySize(r * device.columns + c).span) positions.push(r * device.columns + c);
+		return positions;
+	});
+
 	$: gridRowLengths = [
-		...Array(device.rows).fill(device.columns),
+		...keypadRows.map((row) => row.length),
 		...(device.encoders > 0 ? [device.encoders] : []),
 		...(device.touchpoints > 0 || device.infobars > 0 ? [device.touchpoints + device.infobars] : []),
 	];
@@ -178,18 +191,22 @@
 		on:focusin={handleGridFocusin}
 	>
 		<div class="flex flex-col" role="rowgroup">
-			{#each { length: device.rows } as _, r}
+			{#each keypadRows as row, r}
 				<div class="flex flex-row" role="row">
-					{#each { length: device.columns } as _, c}
+					{#each row as position, c}
+						{@const size = keySize(position)}
 						<Key
-							context={{ device: device.id, profile: profile.id, controller: "Keypad", position: r * device.columns + c }}
-							bind:inslot={profile.keys[r * device.columns + c]}
+							context={{ device: device.id, profile: profile.id, controller: "Keypad", position }}
+							bind:inslot={profile.keys[position]}
 							on:dragover={handleDragOver}
-							on:drop={(event) => handleDrop(event, "Keypad", r * device.columns + c)}
-							on:dragstart={(event) => handleDragStart(event, "Keypad", r * device.columns + c)}
+							on:drop={(event) => handleDrop(event, "Keypad", position)}
+							on:dragstart={(event) => handleDragStart(event, "Keypad", position)}
 							{handlePaste}
-							size={device.id.startsWith("sd-") && device.rows == 4 && device.columns == 8 ? 192 : 144}
-							label="{$t('device_view.key')} {String.fromCharCode(65 + r)}{c + 1}"
+							size={size.height}
+							width={size.width}
+							height={size.height}
+							span={size.span}
+							label="{$t('device_view.key')} {String.fromCharCode(65 + r)}{(position % device.columns) + 1}"
 							tabindex={focusedRow === r && focusedCol === c ? 0 : -1}
 						/>
 					{/each}

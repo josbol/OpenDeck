@@ -94,8 +94,14 @@ export async function renderImage(
 		// Draw image
 		context.imageSmoothingQuality = "high";
 		const imageScale = Math.max(10, state.image_scale || 100) / 100;
-		const xScaled = canvas.width * imageScale;
-		const yScaled = canvas.height * imageScale;
+		let xScaled = canvas.width * imageScale;
+		let yScaled = canvas.height * imageScale;
+		// A rectangular key display (a plugin device's wide key) keeps the image's shape: fitted inside the canvas rather than stretched over it.
+		if (slotContext?.controller == "Keypad" && canvas.width != canvas.height && image.naturalWidth && image.naturalHeight) {
+			const fit = Math.min(canvas.width / image.naturalWidth, canvas.height / image.naturalHeight);
+			xScaled = image.naturalWidth * fit * imageScale;
+			yScaled = image.naturalHeight * fit * imageScale;
+		}
 		const xOffset = (canvas.width - xScaled) / 2;
 		const yOffset = (canvas.height - yScaled) / 2;
 		context.drawImage(image, xOffset, yOffset, xScaled, yScaled);

@@ -27,6 +27,17 @@ pub fn copy_dir(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<(), std:
 	Ok(())
 }
 
+/// Size of a key's display in pixels, as declared by a plugin device.
+#[serde_inline_default]
+#[derive(Clone, Copy, Deserialize, Serialize)]
+pub struct KeySize {
+	pub width: u16,
+	pub height: u16,
+	/// Grid columns the display covers. The keypad positions it covers are not shown in the device view.
+	#[serde_inline_default(1)]
+	pub span: u8,
+}
+
 /// Metadata of a device.
 #[serde_inline_default]
 #[derive(Clone, Deserialize, Serialize)]
@@ -43,6 +54,12 @@ pub struct DeviceInfo {
 	#[serde_inline_default(0)]
 	pub infobars: u8,
 	pub r#type: u8,
+	/// Resolution the images of this device's keys are rendered at, for plugin devices whose displays are not 144x144.
+	#[serde(default)]
+	pub key_size: Option<KeySize>,
+	/// Keys whose display differs from `key_size`, by keypad position as a string (JSON object keys), e.g. a display spanning two columns.
+	#[serde(default)]
+	pub key_sizes: HashMap<String, KeySize>,
 }
 
 pub static DEVICES: LazyLock<DashMap<String, DeviceInfo>> = LazyLock::new(DashMap::new);
