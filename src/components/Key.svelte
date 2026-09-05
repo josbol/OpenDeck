@@ -173,7 +173,8 @@
 			const unlock = await lock.lock();
 			try {
 				let fallback = sl.action.states[sl.current_state]?.image ?? sl.action.icon;
-				if (state) await renderImage(canvas, context, state, fallback, showOk, showAlert, true, active, pressed, $settings?.rotation);
+				// Before the canvas is bound, renderImage would draw on a throwaway 144x144 one and send that to the device; the binding re-runs this block.
+				if (state && canvas) await renderImage(canvas, context, state, fallback, showOk, showAlert, true, active, pressed, $settings?.rotation);
 			} finally {
 				unlock();
 			}
