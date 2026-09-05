@@ -1,0 +1,53 @@
+name: "sync with upstream"
+
+# Keeps this fork on top of nekename/OpenDeck: fast-forwards `main` to
+# upstream's and merges it into `d200x`, the branch carrying the fork's own
+# changes, then builds it. A merge conflict fails the run (GitHub mails the
+# owner); resolve it locally on d200x with
+#   git fetch upstream && git merge upstream/main && git push
+on:
+  schedule:
+    - cron: "17 4 * * 1" # Mondays, 04:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: d200x
+          fetch-depth: 0
+
+      - name: fetch upstream
+        run: |
+          git remote add upstream https://github.com/nekename/OpenDeck.git
+          git fetch upstream main
+
+      - name: fast-forward main
+        run: git push origin upstream/main:main
+
+      - name: merge upstream into d200x
+        id: merge
+        run: |
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo "d200x already contains upstream/main"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git merge --no-edit upstream/main
+          git push origin HEAD:d200x
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      # A push made with the workflow token starts no other workflow, so ask for the build explicitly.
+      - name: build the merged branch
+        if: steps.merge.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run build-linux.yml --ref d200x
