@@ -114,6 +114,7 @@ pub async fn process_incoming_message(data: Result<Message, Error>, uuid: &str, 
 			} else if matches!(decoded, InboundEventType::SwitchProfile(_) | InboundEventType::DeviceBrightness(_))
 				&& uuid != "com.amansprojects.starterpack.sdPlugin"
 				&& uuid != "opendeck_alternative_elgato_implementation"
+				&& uuid != "com.josbol.aiagentmonitor.sdPlugin"
 			{
 				return;
 			}

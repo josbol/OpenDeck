@@ -182,7 +182,12 @@ export async function renderImage(
 
 	context.restore();
 
-	if (active && slotContext) setTimeout(async () => await invoke("update_image", { context: slotContext, image: canvas.toDataURL("image/jpeg") }), 10);
+	if (active && slotContext) {
+		// Elgato hardware takes JPEG. A plugin device re-encodes whatever it gets for its own screens, and JPEG artefacts
+		// make that encode both bigger and blurrier (a palette PNG of a text key doubles in size), so it gets lossless PNG.
+		const format = slotContext.device.startsWith("sd-") ? "image/jpeg" : "image/png";
+		setTimeout(async () => await invoke("update_image", { context: slotContext, image: canvas.toDataURL(format) }), 10);
+	}
 }
 
 export async function resizeImage(source: string): Promise<string | undefined> {
