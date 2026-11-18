@@ -173,7 +173,6 @@
 			const unlock = await lock.lock();
 			try {
 				let fallback = sl.action.states[sl.current_state]?.image ?? sl.action.icon;
-				// Before the canvas is bound, renderImage would draw on a throwaway 144x144 one and send that to the device; the binding re-runs this block.
 				if (state && canvas) await renderImage(canvas, context, state, fallback, showOk, showAlert, true, active, pressed, $settings?.rotation);
 			} finally {
 				unlock();
@@ -194,7 +193,8 @@
 		await invoke("trigger_virtual_press", { context });
 	}
 
-	$: accessibleLabel = label + (slot ? ": " + slot.action.name + (state?.show && state?.text ? " - " + state.text : "") : "");
+	$: accessibleLabel =
+		label + (slot ? ": " + slot.action.name + (state?.show && (state?.text_override || state?.text) ? " - " + (state.text_override || state.text) : "") : "");
 </script>
 
 <div class="relative" style={`transform: scale(${cellScale * scale});`}>
